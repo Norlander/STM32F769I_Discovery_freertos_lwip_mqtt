@@ -100,8 +100,15 @@ int main(void)
   SystemClock_Config();
   
   /* Init thread */
-  osThreadDef(Start, StartThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 5);
+  osThreadDef(Start, StartThread, osPriorityAboveNormal, 0, configMINIMAL_STACK_SIZE * 5);
   osThreadCreate (osThread(Start), NULL);
+
+  /* Thread for handling MQTT */
+    LCD_UsrLog ("  Defining MQTT Init thread...\n");
+    /*osThreadDef_t testThreadDef = */osThreadDef(MQTTInit, MQTTInitThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 5);
+    LCD_UsrLog ("  Creating MQTT Init thread...\n");
+    osThreadId testThreadId = osThreadCreate (osThread(MQTTInit), NULL);
+    LCD_UsrLog ("  MQTT thread created!\n");
 
   /* Start scheduler */
   osKernelStart();
@@ -134,13 +141,6 @@ static void StartThread(void const * argument)
   osThreadDef(DHCP, DHCP_thread, osPriorityBelowNormal, 0, configMINIMAL_STACK_SIZE * 2);
   osThreadCreate (osThread(DHCP), &gnetif);
 #endif
-
-  /* Thread for handling MQTT */
-  LCD_UsrLog ("  Defining MQTT Init thread...\n");
-  /*osThreadDef_t testThreadDef = */osThreadDef(MQTTInit, MQTTInitThread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE * 5);
-  LCD_UsrLog ("  Creating MQTT Init thread...\n");
-  osThreadId testThreadId = osThreadCreate (osThread(MQTTInit), NULL);
-  LCD_UsrLog ("  MQTT thread created!\n");
 
   for( ;; )
   {

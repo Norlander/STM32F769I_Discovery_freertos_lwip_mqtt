@@ -8,6 +8,9 @@
 #include "app_mqtt.h"
 #include "lcd_log.h"
 #include "cmsis_os.h"
+#include "app_ethernet.h"
+
+extern __IO uint8_t DHCP_state;
 
 /* The idea is to demultiplex topic and create some reference to be used in data callbacks
  Example here uses a global variable, better would be to use a member in arg
@@ -42,7 +45,7 @@ static void my_mqtt_publish(mqtt_client_t *client, void *arg) {
  err_t err;
  u8_t qos = 2; /* 0 1 or 2, see MQTT specification */
  u8_t retain = 0; /* No don't retain such crappy payload... */
- err = mqtt_publish(client, "erichs/f/test", pub_payload, strlen(pub_payload), qos, retain, mqtt_pub_request_cb, arg);
+ err = mqtt_publish(client, "test137", pub_payload, strlen(pub_payload), qos, retain, mqtt_pub_request_cb, arg);
  if(err != ERR_OK) {
    printf("Publish err: %d\n", err);
  }
@@ -115,7 +118,7 @@ void mqtt_do_connect(mqtt_client_t *mqtt_client)
   ci.client_user = "testofmqtt";
   ci.client_pass = "testofmqtt";
   ip_addr_t broker_ip_addr;
-  IP4_ADDR(&broker_ip_addr, 198, 41, 30 ,241);
+  IP4_ADDR(&broker_ip_addr, 198, 41, 30, 241);
   /* Initiate client and connect to server, if this fails immediately an error code is returned
      otherwise mqtt_connection_cb will be called with connection result after attempting
      to establish a connection with the server.
@@ -125,7 +128,6 @@ void mqtt_do_connect(mqtt_client_t *mqtt_client)
 
   /* For now just print the result code if something goes wrong */
   if(err != ERR_OK) {
-	  LCD_UsrLog ("  mqtt_connect returned ???\n");
 	  printf("mqtt_connect return %d\n", err);
   }
 }
@@ -137,10 +139,21 @@ void mqtt_do_connect(mqtt_client_t *mqtt_client)
   */
 void MQTTInitThread(void const * argument)
 {
-  /* Notify user about the network interface config */
+
+	osDelay(5000);
+	/* Notify user about the network interface config */
+	printf("MQTTInitThread started @ %d\n", osKernelSysTick());
+	printf("Awaiting IP-ADDress");
+	while (DHCP_state != DHCP_ADDRESS_ASSIGNED)
+	{
+		// Wait here until we have IP-address...
+
+	}
+	printf("IP-address assigned @ %d\n", osKernelSysTick());
+	printf("Trying mqtt_do_connect %d\n", osKernelSysTick());
 	mqtt_do_connect(&static_client);
 
-
+	my_mqtt_publish(&static_client, NULL);
 
   for( ;; )
   {
